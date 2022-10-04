@@ -30,22 +30,8 @@ class PhoneNumberProviderHandler: NSObject, ProviderHandler {
 
         PhoneAuthProvider.provider().verifyPhoneNumber(phone, uiDelegate: nil) { (verificationID, error) in
             if let error = error {
-                if let errCode = AuthErrorCode(rawValue: error._code) {
-                    switch errCode {
-                    case AuthErrorCode.quotaExceeded:
-                        call.reject("Quota exceeded.")
-                    case AuthErrorCode.invalidPhoneNumber:
-                        call.reject("Invalid phone number.")
-                    case AuthErrorCode.captchaCheckFailed:
-                        call.reject("Captcha Check Failed")
-                    case AuthErrorCode.missingPhoneNumber:
-                        call.reject("Missing phone number.")
-                    default:
-                        call.reject("PhoneAuth Sign In failure: \(String(describing: error))")
-                    }
-
-                    return
-                }
+                call.reject("PhoneAuth Sign In failure: \(String(describing: error))")
+                return
             }
 
             self.mVerificationId = verificationID
