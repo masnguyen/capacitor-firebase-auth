@@ -4,7 +4,6 @@ import FirebaseAuth
 
 class PhoneNumberProviderHandler: NSObject, ProviderHandler {
 
-
     var plugin: CapacitorFirebaseAuth? = nil
     var mPhoneNumber: String? = nil
     var mVerificationId: String? = nil
@@ -31,22 +30,8 @@ class PhoneNumberProviderHandler: NSObject, ProviderHandler {
 
         PhoneAuthProvider.provider().verifyPhoneNumber(phone, uiDelegate: nil) { (verificationID, error) in
             if let error = error {
-                if let errCode = AuthErrorCode(rawValue: error._code) {
-                    switch errCode {
-                    case AuthErrorCode.quotaExceeded:
-                        call.reject("Quota exceeded.")
-                    case AuthErrorCode.invalidPhoneNumber:
-                        call.reject("Invalid phone number.")
-                    case AuthErrorCode.captchaCheckFailed:
-                        call.reject("Captcha Check Failed")
-                    case AuthErrorCode.missingPhoneNumber:
-                        call.reject("Missing phone number.")
-                    default:
-                        call.reject("PhoneAuth Sign In failure: \(String(describing: error))")
-                    }
-
-                    return
-                }
+                call.reject("PhoneAuth Sign In failure: \(String(describing: error))")
+                return
             }
 
             self.mVerificationId = verificationID
@@ -59,12 +44,16 @@ class PhoneNumberProviderHandler: NSObject, ProviderHandler {
             // notify event On Cond Sent.
             self.plugin?.notifyListeners("cfaSignInPhoneOnCodeSent", data: ["verificationId" : verificationID ])
 
-            // return success call.
-            call.success([
-                "callbackId": call.callbackId,
-                "verificationId":verificationID
-            ]);
+            guard let callbackId = call.callbackId else {
+                call.reject("There is no callbackId after .verifyPhoneNumber!")
+                return
+            }
 
+            // return success call.
+            call.resolve([
+                "callbackId": callbackId,
+                "verificationId": verificationID
+            ])
         }
     }
 
@@ -76,9 +65,9 @@ class PhoneNumberProviderHandler: NSObject, ProviderHandler {
         return false
     }
 
-    func fillResult(credential: AuthCredential?, data: PluginResultData) -> PluginResultData {
+    func fillResult(credential: AuthCredential?, data: PluginCallResultData) -> PluginCallResultData {
 
-        var jsResult: PluginResultData = [:]
+        var jsResult: PluginCallResultData = [:]
         data.forEach { (key, value) in
             jsResult[key] = value
         }
@@ -88,6 +77,5 @@ class PhoneNumberProviderHandler: NSObject, ProviderHandler {
         jsResult["verificationCode"] = self.mVerificationCode
 
         return jsResult
-
     }
 }
